@@ -1,6 +1,8 @@
 package processor
 
 import (
+	"encoding/json"
+	"fmt"
 	"os/exec"
 	"sync"
 	"syscall"
@@ -33,22 +35,38 @@ type processor struct {
 // Process creates a new exec command using the builder and executes the command. The message gets acknowledged
 // according to the commands exit code using the acknowledger.
 func (p *processor) Process(d delivery.Delivery) error {
-	p.mu.Lock()
-	defer p.mu.Unlock()
+	// p.mu.Lock()
+	// defer p.mu.Unlock()
 
-	var err error
+	payload, err := json.MarshalIndent(&struct {
+		Properties   delivery.Properties `json:"properties"`
+		DeliveryInfo delivery.Info       `json:"delivery_info"`
+		Body         string              `json:"body"`
+	}{
+		Properties:   d.Properties(),
+		DeliveryInfo: d.Info(),
+		Body:         string(d.Body()),
+	}, "", "  ")
 
-	p.cmd, err = p.builder.GetCommand(d.Properties(), d.Info(), d.Body())
-	defer func() {
-		p.cmd = nil
-	}()
 	if err != nil {
-		d.Nack(true)
-		return NewCreateCommandError(err)
+		return err
 	}
 
-	exitCode := p.run()
+	fmt.Println(string(payload))
 
+	// var err error
+	// p.cmd, err = p.builder.GetCommand(d.Properties(), d.Info(), d.Body())
+	// defer func() {
+	// 	p.cmd = nil
+	// }()
+	// if err != nil {
+	// 	d.Nack(true)
+	// 	return NewCreateCommandError(err)
+	// }
+
+	// exitCode := p.run()
+
+	exitCode := 0
 	if err := p.ack.Ack(d, exitCode); err != nil {
 		return NewAcknowledgmentError(err)
 	}

@@ -67,6 +67,14 @@ var flags = []cli.Flag{
 		Name:  "no-datetime",
 		Usage: "prevents the output of date and time in the logs.",
 	},
+	cli.StringFlag{
+		Name:  "exchange",
+		Usage: "exchange name.",
+	},
+	cli.StringFlag{
+		Name:  "exchange-type",
+		Usage: "exchange type",
+	},
 }
 
 func main() {
@@ -223,6 +231,15 @@ func LoadConfiguration(c *cli.Context) (*config.Config, error) {
 
 	if c.IsSet("strict-exit-code") {
 		cfg.RabbitMq.Stricfailure = c.Bool("strict-exit-code")
+	}
+
+	exchange := c.String("exchange")
+	exchangeType := c.String("exchange-type")
+	if len(exchange) > 0 {
+		cfg.Exchange.Name = exchange
+		cfg.Exchange.Type = exchangeType
+		cfg.Exchange.Autodelete = false
+		cfg.Exchange.Durable = true
 	}
 
 	return cfg, nil
